@@ -1,5 +1,4 @@
-use rust_cli::cli_utils::info;
-use rust_cli::cli_utils::{print_results, print_c, print_c_no_nl,RED, CYAN, YELLOW, WHITE, GREEN};
+use rust_cli::cli_utils::{info, success, print_results,  print_c_no_nl, YELLOW};
 use walkdir::WalkDir;
 use std::env;
 use std::thread::{self, JoinHandle};
@@ -47,30 +46,43 @@ impl <'a> Search <'a>{
         let target = self.target.to_string();
         let results_dir_cloned = self.results_dir.clone();
         let results_file_cloned = self.results_file.clone();
-            let handle = thread::spawn(move || {
-        for entry in WalkDir::new(&source) {
-            if let Ok(entry) = entry {
+        // start a thread here
+        let handle = thread::spawn(move || {
+                //we cannot use self directly inside the thread closure because it will be out of
+                //scope we have to clone everything before, so we cannot pass here any self.method
+                //to clean this part without cloning the whole structure before which is kind of
+                //expansive for just splitting this code
+        for entry in WalkDir::new(&source) 
+        {
+            if let Ok(entry) = entry 
+            {
                 let path = entry.path();
                 let path_str = path.to_string_lossy().to_string();
             
-            if path_str.contains(&target) {
-                if path.is_dir() {
-                    results_dir_cloned.lock().unwrap().push(path_str.clone());
-                    print_c(&format!("\rdirectory was found: {}", path_str.clone()),GREEN);
-                } else {
-                    if path.file_name().unwrap().to_string_lossy().to_string().contains(&target) {
-                    results_file_cloned.lock().unwrap().push(path_str.clone());
-                    print_c(&format!("\rfile was found: {}", path_str.clone()), GREEN);}
+                if path_str.contains(&target) 
+                {
+                    if path.is_dir() 
+                    {
+                        results_dir_cloned.lock().unwrap().push(path_str.clone());
+                        success(&format!("\rdirectory was found: {}", path_str.clone()));
+                    } 
+                    else 
+                    {
+                        if path.file_name().unwrap().to_string_lossy().to_string().contains(&target) 
+                        {
+                            results_file_cloned.lock().unwrap().push(path_str.clone());
+                            success(&format!("\rfile was found: {}", path_str.clone()));
+                        }
+                    }
                 }
-            }
         
 
-    }
-}
+            }
+        }
 
-            });
+    });//end of ::spawn(|| {
 
-        handle
+        handle //we return the JoinHandle of the thread
     }
 
 fn display_results(&mut self) {
@@ -79,7 +91,7 @@ fn display_results(&mut self) {
 
     print_results(&results_dir_locked, "\rThe target directories are:", format!("\rthe directory {} was not found", self.target).as_str());
     print_results(&results_file_locked, "\rThe target files are:", format!("\rthe file {} was not found", self.target).as_str());
-    print_c("\rSearch completed", CYAN);
+    info("\rSearch completed");
 }
 
     
@@ -125,7 +137,7 @@ pub fn start(&mut self) {
 fn main() {
     let args: Vec<String> = env::args().collect::<Vec<String>>();
     if args.len() < 3 {
-        print_c("Usage: rufind source_directory target_directory [extension]", CYAN);
+        info("Usage: rufind source_directory target_directory [extension]");
         std::process::exit(1);
     }
     let args = env::args().collect::<Vec<String>>();
