@@ -1,0 +1,1 @@
+This is my first CLI Application in Rust. A usefull and simple way of searching to file or directory in a given source directory. It displays a spinner during the search as well as the different match that occur and sum up the results in the end. It was a way of experimenting multithreading to deal with the spinner and the search.
